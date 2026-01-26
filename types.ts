@@ -4,6 +4,7 @@ export type ExpenseStatus = 'Pago' | 'Pendente';
 
 export interface Expense {
   id: string;
+  groupId?: string; // Identificador único para o grupo da despesa em todos os meses
   description: string;
   category: string;
   type: ExpenseType;
