@@ -71,10 +71,9 @@ const App: React.FC = () => {
       const savedStore = localStorage.getItem('finance_monthly_store');
       if (savedStore) {
         const parsed = JSON.parse(savedStore);
-        // Garantir que todos os itens tenham groupId para sincronização
         Object.keys(parsed).forEach(m => {
           parsed[Number(m)].expenses.forEach((e: Expense) => {
-            if (!e.groupId) e.groupId = e.id.split('-')[0]; // Fallback para ID base
+            if (!e.groupId) e.groupId = e.id.split('-')[0];
           });
         });
         return parsed;
@@ -87,7 +86,8 @@ const App: React.FC = () => {
             ...e, 
             groupId: e.id,
             id: `${e.id}-${index}`,
-            // Zera valores para meses que não são Janeiro (ou o atual) se preferir
+            // Janeiro (0) mantém os valores iniciais como amostra
+            // Fevereiro em diante (index > 0) inicia zerado
             expectedValue: index === 0 ? e.expectedValue : 0,
             paidValue: index === 0 ? e.paidValue : 0,
             status: index === 0 ? e.status : 'Pendente'
@@ -181,7 +181,6 @@ const App: React.FC = () => {
       
       if (!currentExpense) return prev;
 
-      // Se for descrição ou categoria, replicar para todos os meses usando o groupId
       if (field === 'description' || field === 'category') {
         const gid = currentExpense.groupId;
         for (let i = 0; i < 12; i++) {
@@ -193,7 +192,6 @@ const App: React.FC = () => {
           };
         }
       } else {
-        // Campos de valor e status são específicos do mês
         newStore[selectedMonth] = {
           ...newStore[selectedMonth],
           expenses: newStore[selectedMonth].expenses.map(e => {
@@ -306,7 +304,7 @@ const App: React.FC = () => {
       monthlyStore,
       categories,
       exportDate: new Date().toISOString(),
-      version: "3.0"
+      version: "3.1"
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -334,7 +332,7 @@ const App: React.FC = () => {
           throw new Error("Formato de arquivo inválido");
         }
       } catch (err) {
-        alert("Erro ao importar: Verifique se o arquivo é um backup válido do FinanceFlow.");
+        alert("Erro ao importar: Verifique se o arquivo é um backup válido.");
       }
     };
     reader.readAsText(file);
@@ -377,7 +375,7 @@ const App: React.FC = () => {
           </nav>
 
           <div className="space-y-4 mb-auto">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-4">Navegação Temporal</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-4">Calendário Anual</p>
             <div className="grid grid-cols-3 gap-2 px-2">
               {MONTHS.map((month, idx) => (
                 <button key={month} onClick={() => setSelectedMonth(idx)} className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${selectedMonth === idx ? 'bg-emerald-500 border-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20' : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-500'}`}>
@@ -387,9 +385,8 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Backup & Tools Section */}
           <div className="pt-6 border-t border-slate-800 mt-6 space-y-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-4">Gestão de Dados</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 px-4">Backup e Dados</p>
             <div className="flex flex-col gap-2 px-2">
               <button onClick={exportData} className="flex items-center justify-between gap-2 px-4 py-2.5 bg-slate-800/50 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 hover:bg-slate-800 hover:text-white transition-all">
                 Exportar Backup <Download className="w-4 h-4" />
@@ -430,10 +427,10 @@ const App: React.FC = () => {
           {activeTab === 'dashboard' ? (
             <div className="space-y-6 animate-in fade-in duration-500">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card title="Planejado Anual" value={formatBRL(currentSummary.totalExpected)} icon={<TrendingUp className="text-blue-400" />} />
-                <Card title="Efetivado" value={formatBRL(currentSummary.totalPaid)} icon={<TrendingDown className="text-emerald-400" />} />
-                <Card title="Disponível" value={formatBRL(currentSummary.balance)} icon={<Wallet className="text-amber-400" />} />
-                <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <Card title="Previsto" value={formatBRL(currentSummary.totalExpected)} icon={<TrendingUp className="text-blue-400" />} />
+                <Card title="Pago" value={formatBRL(currentSummary.totalPaid)} icon={<TrendingDown className="text-emerald-400" />} />
+                <Card title="Saldo Restante" value={formatBRL(currentSummary.balance)} icon={<Wallet className="text-amber-400" />} />
+                <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col justify-between shadow-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Execução</span>
                     <Activity className="w-5 h-5 text-purple-400" />
@@ -457,7 +454,7 @@ const App: React.FC = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl">
-                  <h3 className="font-bold text-white mb-6 flex items-center gap-2"><PieChartIcon className="w-5 h-5 text-cyan-400" /> Concentração de Gastos</h3>
+                  <h3 className="font-bold text-white mb-6 flex items-center gap-2"><PieChartIcon className="w-5 h-5 text-cyan-400" /> Divisão por Categoria</h3>
                   <div className="h-[250px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartData} layout="vertical">
@@ -472,7 +469,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl flex flex-col items-center">
-                  <h3 className="font-bold text-white mb-6 w-full flex items-center gap-2"><RefreshCw className="w-5 h-5 text-pink-400" /> Tipos de Custo</h3>
+                  <h3 className="font-bold text-white mb-6 w-full flex items-center gap-2"><RefreshCw className="w-5 h-5 text-pink-400" /> Tipo de Lançamentos</h3>
                   <div className="h-[200px] w-full relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -483,7 +480,7 @@ const App: React.FC = () => {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                       <span className="text-[10px] text-slate-500 font-bold uppercase">Saldo</span>
+                       <span className="text-[10px] text-slate-500 font-bold uppercase">Restante</span>
                        <span className="text-sm font-bold text-white">{formatBRL(currentSummary.balance)}</span>
                     </div>
                   </div>
@@ -494,7 +491,7 @@ const App: React.FC = () => {
             <div className="space-y-4 pb-24 md:pb-0 animate-in slide-in-from-bottom duration-300">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl">
                 <div className="flex items-center gap-4 flex-1">
-                  <h3 className="font-bold text-white text-lg">Controle Mensal</h3>
+                  <h3 className="font-bold text-white text-lg">Lançamentos Mensais</h3>
                   <div className="h-8 w-px bg-slate-800 hidden md:block"></div>
                   <div className="flex items-center gap-2 flex-1 max-w-sm">
                     <input 
@@ -512,7 +509,6 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Filtros Visuais */}
               <div className="flex items-center gap-3 overflow-x-auto pb-4 scrollbar-hide">
                 <button 
                   onClick={() => setFilterCategory(null)}
@@ -537,10 +533,10 @@ const App: React.FC = () => {
                 <table className="w-full text-left">
                   <thead className="bg-slate-950/50 text-slate-500 text-[10px] uppercase font-bold tracking-widest border-b border-slate-800">
                     <tr>
-                      <th className="px-8 py-6">Descrição (Sincronizado)</th>
+                      <th className="px-8 py-6">Descrição</th>
                       <th className="px-6 py-6">Categoria</th>
-                      <th className="px-6 py-6 text-right">Previsão</th>
-                      <th className="px-6 py-6 text-right">Efetivado</th>
+                      <th className="px-6 py-6 text-right">Previsto</th>
+                      <th className="px-6 py-6 text-right">Pago</th>
                       <th className="px-6 py-6 text-center">Venc.</th>
                       <th className="px-6 py-6 text-center">Status</th>
                       <th className="px-6 py-6 text-right">Ação</th>
@@ -629,12 +625,12 @@ const App: React.FC = () => {
             <div className="space-y-6 animate-in fade-in duration-300">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card title="Acumulado Pago" value={formatBRL(historyData.reduce((acc, curr) => acc + curr.pago, 0))} icon={<ArrowUpRight className="text-emerald-400" />} />
-                <Card title="Média de Gasto" value={formatBRL(historyData.reduce((acc, curr) => acc + curr.pago, 0) / 12)} icon={<Activity className="text-indigo-400" />} />
-                <Card title="Reserva Gerada" value={formatBRL(historyData.reduce((acc, curr) => acc + curr.economia, 0))} icon={<TrendingUp className="text-emerald-400" />} />
+                <Card title="Média Paga" value={formatBRL(historyData.reduce((acc, curr) => acc + curr.pago, 0) / 12)} icon={<Activity className="text-indigo-400" />} />
+                <Card title="Total Previsto" value={formatBRL(historyData.reduce((acc, curr) => acc + curr.previsto, 0))} icon={<TrendingUp className="text-emerald-400" />} />
               </div>
               <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 h-[350px] md:h-[450px] shadow-2xl relative">
                 <div className="absolute top-6 left-8 flex items-center gap-2 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
-                  <Activity className="w-4 h-4" /> Evolução Financeira Anual
+                  <Activity className="w-4 h-4" /> Fluxo de Pagamentos Anual
                 </div>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={historyData} margin={{ top: 60, right: 10, left: -20, bottom: 0 }}>
@@ -649,7 +645,7 @@ const App: React.FC = () => {
                     <YAxis stroke="#475569" fontSize={10} axisLine={false} tickLine={false} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '12px' }} 
-                      formatter={(v: number) => [formatBRL(v), 'Efetivado']}
+                      formatter={(v: number) => [formatBRL(v), 'Pago']}
                       itemStyle={{ color: '#10b981', fontWeight: 'bold' }}
                     />
                     <Area type="monotone" dataKey="pago" stroke="#10b981" fill="url(#colorPago)" strokeWidth={4} />
@@ -671,7 +667,7 @@ const App: React.FC = () => {
                  <div className="p-3 bg-emerald-500/10 rounded-2xl"><Tag className="w-6 h-6 text-emerald-400" /></div>
                  <div>
                     <h3 className="text-xl font-bold text-white leading-tight">Categorias</h3>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Personalize sua gestão</p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Personalização Global</p>
                  </div>
               </div>
               <button onClick={() => setIsCategoryModalOpen(false)} className="p-2 text-slate-500 hover:text-white hover:bg-slate-800 rounded-full transition-all"><X /></button>
@@ -679,7 +675,7 @@ const App: React.FC = () => {
             <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
               <div className="space-y-4 bg-slate-950/50 p-6 rounded-3xl border border-slate-800 shadow-inner">
                 <div className="flex flex-col gap-3">
-                  <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Criar nova categoria integrada</p>
+                  <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Criar nova categoria</p>
                   <div className="flex gap-3">
                     <input 
                       type="text" 
@@ -702,7 +698,7 @@ const App: React.FC = () => {
               </div>
 
               <div className="space-y-4">
-                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest px-2">Categorias Ativas & Sincronização</p>
+                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest px-2">Lista de Categorias</p>
                 <div className="grid grid-cols-1 gap-3">
                   {(Object.values(categories) as CategoryInfo[]).map((cat: CategoryInfo) => (
                     <div key={cat.name} className="flex items-center justify-between p-5 bg-slate-800/40 rounded-3xl border border-slate-700/50 group hover:bg-slate-800/60 transition-all shadow-sm">
@@ -715,7 +711,7 @@ const App: React.FC = () => {
                           onClick={() => addNewExpense(cat.name)}
                           className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase rounded-xl border border-emerald-500/20 hover:bg-emerald-500 hover:text-slate-950 transition-all"
                         >
-                          <PlusCircle className="w-3.5 h-3.5" /> Incluir em todos os meses
+                          <PlusCircle className="w-3.5 h-3.5" /> Adicionar em todos os meses
                         </button>
                         <button 
                           onClick={() => removeCategory(cat.name)}
@@ -731,7 +727,7 @@ const App: React.FC = () => {
             </div>
             <div className="p-6 bg-slate-950/40 text-center border-t border-slate-800 flex items-center justify-center gap-2">
                <AlertCircle className="w-4 h-4 text-amber-500/50" />
-               <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Nomes e categorias alterados refletem em todo o calendário anual</p>
+               <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest italic">Apenas Janeiro contém dados iniciais. Os demais meses iniciam zerados.</p>
             </div>
           </div>
         </div>
