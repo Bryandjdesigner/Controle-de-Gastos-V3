@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   TrendingUp, 
@@ -43,7 +44,7 @@ import {
 } from 'recharts';
 import * as XLSX from 'xlsx';
 import { INITIAL_EXPENSES, CATEGORIES as DEFAULT_CATEGORIES } from './constants';
-import { Expense, SummaryData, MonthlyDataStore, MonthData, CategoryInfo } from './types';
+import { Expense, SummaryData, MonthlyDataStore, ExpenseStatus, CategoryInfo } from './types';
 import { getFinancialInsights } from './services/geminiService';
 
 const MONTHS = [
@@ -51,7 +52,7 @@ const MONTHS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-const APP_VERSION = "3.6"; // Versão atualizada para garantir propagação e reset de estado
+const APP_VERSION = "3.7"; 
 
 const App: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
@@ -63,7 +64,6 @@ const App: React.FC = () => {
   const [showSaveIndicator, setShowSaveIndicator] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Categorias Dinâmicas
   const [categories, setCategories] = useState<Record<string, CategoryInfo>>(() => {
     const saved = localStorage.getItem('finance_categories');
     return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
@@ -81,14 +81,20 @@ const App: React.FC = () => {
       const initialStore: MonthlyDataStore = {};
       MONTHS.forEach((_, index) => {
         initialStore[index] = {
-          expenses: INITIAL_EXPENSES.map(e => ({ 
-            ...e, 
-            groupId: e.id,
-            id: `${e.id}-${index}`,
-            expectedValue: index === 0 ? e.expectedValue : 0,
-            paidValue: index === 0 ? e.paidValue : 0,
-            status: index === 0 ? (e.paidValue === e.expectedValue && e.expectedValue > 0 ? 'Pago' : 'Pendente') : 'Pendente'
-          })),
+          expenses: INITIAL_EXPENSES.map(e => {
+            const expVal = index === 0 ? e.expectedValue : 0;
+            const paidVal = index === 0 ? e.paidValue : 0;
+            const status: ExpenseStatus = (expVal > 0 && paidVal === expVal) ? 'Pago' : 'Pendente';
+            
+            return { 
+              ...e, 
+              groupId: e.id,
+              id: `${e.id}-${index}`,
+              expectedValue: expVal,
+              paidValue: paidVal,
+              status: status
+            };
+          }),
           userName: ''
         };
       });
@@ -176,7 +182,10 @@ const App: React.FC = () => {
   const handleUpdateExpense = (id: string, field: keyof Expense, value: any) => {
     setMonthlyStore(prev => {
       const newStore = { ...prev };
-      const currentMonthExpenses = prev[selectedMonth].expenses;
+      const currentMonthData = prev[selectedMonth];
+      if (!currentMonthData) return prev;
+
+      const currentMonthExpenses = currentMonthData.expenses;
       const targetExpenseIndex = currentMonthExpenses.findIndex(e => e.id === id);
       
       if (targetExpenseIndex === -1) return prev;
@@ -201,12 +210,9 @@ const App: React.FC = () => {
               const expVal = field === 'expectedValue' ? (parseFloat(value) || 0) : e.expectedValue;
               const paidVal = field === 'paidValue' ? (parseFloat(value) || 0) : e.paidValue;
               
-              // Status Pago apenas se valor pago for igual ao previsto e > 0
-              if (expVal > 0 && paidVal === expVal) {
-                updated.status = 'Pago';
-              } else {
-                updated.status = 'Pendente';
-              }
+              const status: ExpenseStatus = (expVal > 0 && paidVal === expVal) ? 'Pago' : 'Pendente';
+              updated.status = status;
+              
               return updated;
             }
             return e;
@@ -239,12 +245,14 @@ const App: React.FC = () => {
   const toggleStatus = (id: string) => {
     setMonthlyStore(prev => {
       const monthData = prev[selectedMonth];
+      if (!monthData) return prev;
+
       const newExpenses = monthData.expenses.map(e => {
         if (e.id === id) {
           const isMarkingPaid = e.status !== 'Pago';
           return { 
             ...e, 
-            status: isMarkingPaid ? 'Pago' : 'Pendente', 
+            status: (isMarkingPaid ? 'Pago' : 'Pendente') as ExpenseStatus, 
             paidValue: isMarkingPaid ? (e.expectedValue > 0 ? e.expectedValue : 0) : 0 
           };
         }
@@ -272,7 +280,7 @@ const App: React.FC = () => {
           expectedValue: 0,
           paidValue: 0,
           dueDate: '',
-          status: 'Pendente'
+          status: 'Pendente' as ExpenseStatus
         };
         newStore[i] = {
           ...monthData,
