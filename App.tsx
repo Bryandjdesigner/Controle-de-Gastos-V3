@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   TrendingUp, 
@@ -52,7 +51,7 @@ const MONTHS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-const APP_VERSION = "3.5"; // Versão atualizada
+const APP_VERSION = "3.6"; // Versão atualizada para garantir propagação e reset de estado
 
 const App: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
@@ -199,17 +198,15 @@ const App: React.FC = () => {
           expenses: currentMonthExpenses.map(e => {
             if (e.id === id) {
               const updated = { ...e, [field]: value };
-              
               const expVal = field === 'expectedValue' ? (parseFloat(value) || 0) : e.expectedValue;
               const paidVal = field === 'paidValue' ? (parseFloat(value) || 0) : e.paidValue;
               
-              // Nova regra: Status Pago apenas se valor pago for igual ao previsto e > 0
+              // Status Pago apenas se valor pago for igual ao previsto e > 0
               if (expVal > 0 && paidVal === expVal) {
                 updated.status = 'Pago';
               } else {
                 updated.status = 'Pendente';
               }
-              
               return updated;
             }
             return e;

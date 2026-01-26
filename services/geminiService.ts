@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Expense } from "../types";
 
@@ -16,7 +15,6 @@ export const getFinancialInsights = async (expenses: Expense[]) => {
     }));
 
     // Generating content using the gemini-3-flash-preview model with a system instruction.
-    // The model choice 'gemini-3-flash-preview' is recommended for basic text tasks like summarization.
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Analise estes dados de despesas: ${JSON.stringify(summary)}`,
@@ -25,7 +23,7 @@ export const getFinancialInsights = async (expenses: Expense[]) => {
       }
     });
     
-    // Accessing the .text property of the response directly, not as a method.
+    // Accessing the .text property of the response directly.
     return response.text;
   } catch (error) {
     console.error("Erro no Gemini:", error);
