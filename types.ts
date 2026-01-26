@@ -16,7 +16,7 @@ export interface Expense {
 export interface CategoryInfo {
   name: string;
   color: string;
-  icon: string;
+  icon?: string;
 }
 
 export interface SummaryData {
@@ -28,4 +28,13 @@ export interface SummaryData {
   variableTotal: number;
 }
 
-export type MonthlyDataStore = Record<number, Expense[]>;
+export interface MonthData {
+  expenses: Expense[];
+  userName: string;
+}
+
+export type MonthlyDataStore = Record<number, MonthData>;
+
+export interface AppSettings {
+  categories: Record<string, CategoryInfo>;
+}
