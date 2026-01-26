@@ -4,12 +4,8 @@ import { Expense } from "../types";
 
 export const getFinancialInsights = async (expenses: Expense[]) => {
   try {
-    const apiKey = process.env.API_KEY || "";
-    if (!apiKey) {
-      return "⚠️ API Key não configurada. Adicione sua chave Gemini nas variáveis de ambiente.";
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
+    // Initializing the GoogleGenAI client with the API key from environment variables as per guidelines.
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const summary = expenses.map(e => ({
       desc: e.description,
@@ -19,23 +15,17 @@ export const getFinancialInsights = async (expenses: Expense[]) => {
       status: e.status
     }));
 
-    const prompt = `
-      Como um analista financeiro sênior, analise estas despesas mensais e forneça 3 insights curtos e acionáveis em português do Brasil.
-      Foque em:
-      1. Pontos de economia imediata.
-      2. Alerta sobre o balanço de despesas fixas vs variáveis.
-      3. Uma recomendação para o próximo mês.
-      
-      Responda apenas com os 3 pontos em formato de lista Markdown.
-      
-      Dados: ${JSON.stringify(summary)}
-    `;
-
+    // Generating content using the gemini-3-flash-preview model with a system instruction.
+    // The model choice 'gemini-3-flash-preview' is recommended for basic text tasks like summarization.
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: prompt,
+      contents: `Analise estes dados de despesas: ${JSON.stringify(summary)}`,
+      config: {
+        systemInstruction: "Você é um analista financeiro sênior. Forneça 3 insights curtos e acionáveis em português do Brasil sobre estas despesas. Foque em: 1. Pontos de economia imediata. 2. Alerta sobre o balanço de despesas fixas vs variáveis. 3. Uma recomendação para o próximo mês. Responda apenas com os 3 pontos em formato de lista Markdown.",
+      }
     });
     
+    // Accessing the .text property of the response directly, not as a method.
     return response.text;
   } catch (error) {
     console.error("Erro no Gemini:", error);
