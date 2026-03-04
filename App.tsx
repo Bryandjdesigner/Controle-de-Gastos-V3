@@ -52,9 +52,10 @@ const MONTHS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-const APP_VERSION = "3.7"; 
+const APP_VERSION = "3.8"; 
 
 const App: React.FC = () => {
+  // --- Estados do App ---
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -157,7 +158,6 @@ const App: React.FC = () => {
         fullName: name,
         pago: s.totalPaid,
         previsto: s.totalExpected,
-        economia: s.totalExpected - s.totalPaid > 0 ? s.totalExpected - s.totalPaid : 0,
         index
       };
     });
@@ -434,13 +434,6 @@ const App: React.FC = () => {
               <button onClick={exportMonthToExcel} className="flex items-center justify-between gap-2 px-4 py-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl text-xs font-bold border border-emerald-500/20 hover:bg-emerald-500 hover:text-slate-950 transition-all">
                 Exportar {MONTHS[selectedMonth]} (.xlsx) <FileSpreadsheet className="w-4 h-4" />
               </button>
-              <button onClick={exportFullBackupJSON} className="flex items-center justify-between gap-2 px-4 py-2.5 bg-slate-800/50 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 hover:bg-slate-800 hover:text-white transition-all">
-                Backup GERAL <Download className="w-4 h-4" />
-              </button>
-              <button onClick={() => fileInputRef.current?.click()} className="flex items-center justify-between gap-2 px-4 py-2.5 bg-slate-800/50 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 hover:bg-slate-800 hover:text-white transition-all">
-                Restaurar Backup <Upload className="w-4 h-4" />
-              </button>
-              <input type="file" ref={fileInputRef} onChange={importData} accept=".json" className="hidden" />
             </div>
           </div>
         </div>
@@ -639,7 +632,6 @@ const App: React.FC = () => {
             <div className="space-y-6 animate-in fade-in duration-300">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card title="Acumulado Pago" value={formatBRL(historyData.reduce((acc, curr) => acc + curr.pago, 0))} icon={<ArrowUpRight className="text-emerald-400" />} />
-                <Card title="Média Paga" value={formatBRL(historyData.reduce((acc, curr) => acc + curr.pago, 0) / 12)} icon={<Activity className="text-indigo-400" />} />
                 <Card title="Total Previsto" value={formatBRL(historyData.reduce((acc, curr) => acc + curr.previsto, 0))} icon={<TrendingUp className="text-emerald-400" />} />
               </div>
               <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 h-[450px] shadow-2xl relative">
